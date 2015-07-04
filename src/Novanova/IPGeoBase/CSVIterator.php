@@ -32,7 +32,9 @@ class CSVIterator
                 throw new \RuntimeException("Something wrong when CSV file '{$this->fileName}' was read.");
             }
 
-            yield $out;
+            if ($out !== false) {
+                yield $out;
+            }
         }
     }
 }

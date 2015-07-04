@@ -53,12 +53,8 @@ class DatabaseDiffer
             $destination->rewind();
 
             while ($destination->valid() && $this->data->valid()) {
-                /**
-                 * @var Model $model
-                 */
-                $model = $destination->current();
+                $item = $destination->current();
                 $source = $this->data->current();
-                $item = $model->toArray();
                 $compare = $this->compare($source, $item);
                 $type = null;
 
@@ -127,7 +123,11 @@ class DatabaseDiffer
 
     protected function equals($lhs, $rhs) {
         foreach ($this->fields as $index => $key) {
-            if (strcmp("~{$lhs[$index]}~", "~{$rhs[$key]}~") !== 0) {
+            if (is_numeric($lhs[$index]) && is_numeric($rhs[$key])) {
+                if ($lhs[$index] != $rhs[$key]) {
+                    return $lhs[$index] < $rhs[$key];
+                }
+            } else if (strcmp($lhs[$index], $rhs[$key]) !== 0) {
                 return false;
             }
         }
@@ -140,7 +140,13 @@ class DatabaseDiffer
             return false;
         }
 
-        $this->diff[$type][] = $item;
+        $model = [];
+
+        foreach ($item as $key => $value) {
+            $model[$this->fields[$key]] = $value;
+        }
+
+        $this->diff[$type][] = $model;
 
         return count($this->diff[$type]) >= $this->count;
     }

@@ -25,7 +25,6 @@ class IPGeoBaseServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->package('2nova/ip-geo-base');
     }
 
     /**

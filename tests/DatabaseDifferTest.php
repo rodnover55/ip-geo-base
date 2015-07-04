@@ -11,7 +11,7 @@ use Novanova\Tests\Mocks\ModelMock;
  */
 class DatabaseDifferTest extends TestCase
 {
-    protected function tearDown()
+    public function tearDown()
     {
         parent::tearDown();
         Mockery::close();
@@ -46,7 +46,13 @@ class DatabaseDifferTest extends TestCase
     }
 
     protected function execute($data, $items) {
-        $differ = new DatabaseDiffer(new ArrayIterator($data), ['id', 'city', 'people']);
+        $array = [];
+
+        foreach ($data as $item) {
+            $array[] = array_values($item);
+        }
+        
+        $differ = new DatabaseDiffer(new ArrayIterator($array), ['id', 'city', 'people']);
         $query = $this->createBuilder($items);
         $saved = [];
 
@@ -61,7 +67,10 @@ class DatabaseDifferTest extends TestCase
         $items = [];
 
         foreach ($ids as $id) {
-            $items[] = [$id, $this->faker->city, $this->faker->numberBetween(10000, 5000000)];
+            $items[] = [
+                'id' => $id,
+                'city' => $this->faker->city,
+                'people' => $this->faker->numberBetween(10000, 5000000)];
         }
 
         return $items;
@@ -80,11 +89,7 @@ class DatabaseDifferTest extends TestCase
         $collections = [];
 
         foreach ($data as $item) {
-            $collections[] = new ModelMock([
-                'id' => $item[0],
-                'city' => $item[1],
-                'people' => $item[2]
-            ]);
+            $collections[] = new ModelMock($item);
         }
 
         $chunks = new ArrayIterator(array_chunk($collections, $size));
