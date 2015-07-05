@@ -28,7 +28,9 @@ class IpGeoBaseServiceTest extends TestCase
         $cidr = base_path('src/Novanova/IPGeoBase/cidr_optim.txt');
 
         $service = new IpGeoBaseService();
-        $service->import($cities, $cidr);
+        $service->import($cities, $cidr, [
+            'count' => 1
+        ]);
 
         $csv = new CSVIterator($cities, "\t");
 

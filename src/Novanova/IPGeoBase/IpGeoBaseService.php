@@ -11,6 +11,8 @@ class IpGeoBaseService
 {
     private $citiesFile;
     private $cidrFile;
+    private $count;
+    private $limit;
 
     public function get($ip) {
         $longIp = ip2long($ip);
@@ -23,13 +25,19 @@ class IpGeoBaseService
         return new CityData($result['country'], $result['city']);
     }
 
-    public function import($citiesFile, $cidrFile) {
+    public function import($citiesFile, $cidrFile, $config = []) {
         $this->setFiles($citiesFile, $cidrFile);
+        $this->setConfig($config);
 
         DB::transaction(function () {
             $this->importCities();
             $this->importCidr();
         });
+    }
+
+    protected function setConfig($config) {
+        $this->count = array_get($config, 'count', 1000);
+        $this->limit = array_get($config, 'limit', 10000);
     }
 
     protected function setFiles($citiesFile, $cidrFile) {
@@ -53,7 +61,8 @@ class IpGeoBaseService
         $differ = new DatabaseDiffer($csv->getGenerator(), [
             'id', 'city', 'region', 'district', 'lat', 'lng'
         ], ['id'], [
-            'count' => 1
+            'count' => $this->count,
+            'limit' =>  $this->limit
         ]);
 
         $differ->getDiff(DB::table('ip_geo_base__cities')
@@ -84,7 +93,8 @@ class IpGeoBaseService
         $differ = new DatabaseDiffer($csv->getGenerator(), [
             'long_ip1', 'long_ip2', 'ip1', 'ip2', 'country', 'city_id'
         ], ['long_ip1', 'long_ip2', 'ip1', 'ip2', 'country', 'city_id'], [
-            'count' => 1
+            'count' => $this->count,
+            'limit' =>  $this->limit
         ]);
 
         $differ->getDiff(DB::table('ip_geo_base__base')
