@@ -22,9 +22,14 @@ class IpGeoBaseService
             ->leftJoin('ip_geo_base__cities', 'ip_geo_base__cities.id', '=', 'ip_geo_base__base.city_id')
             ->first();
 
-        $result = (array)$result;
+        $cityData = null;
 
-        return new CityData($result['country'], $result['city']);
+        if (!empty($result)) {
+            $result = (array)$result;
+            $cityData = new CityData($result['country'], $result['city']);
+        }
+
+        return $cityData;
     }
 
     public function import($citiesFile, $cidrFile, $config = []) {
