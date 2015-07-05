@@ -12,7 +12,27 @@ class IpGeoBaseService
     private $citiesFile;
     private $cidrFile;
 
-    public function __construct($citiesFile, $cidrFile) {
+    public function get($ip) {
+        $longIp = ip2long($ip);
+
+        $result = DB::table('ip_geo_base__base')->where($longIp, '>', DB::raw('ip_geo_base__base.long_ip1'))
+            ->where($longIp, '<', DB::raw('ip_geo_base__base.long_ip2'))
+            ->leftJoin('ip_geo_base__cities', 'ip_geo_base__cities.id', '=', 'ip_geo_base__base.city_id')
+            ->first();
+
+        return new CityData($result['country'], $result['city']);
+    }
+
+    public function import($citiesFile, $cidrFile) {
+        $this->setFiles($citiesFile, $cidrFile);
+
+        DB::transaction(function () {
+            $this->importCities();
+            $this->importCidr();
+        });
+    }
+
+    protected function setFiles($citiesFile, $cidrFile) {
         $this->citiesFile = $citiesFile;
         $this->cidrFile = $cidrFile;
 
@@ -23,14 +43,9 @@ class IpGeoBaseService
         if (!file_exists($this->cidrFile)) {
             throw new FileNotFoundException("file '{$this->cidrFile}' not found.");
         }
+
     }
 
-    public function import() {
-        DB::transaction(function () {
-            $this->importCities();
-            $this->importCidr();
-        });
-    }
 
     protected function importCities() {
         $csv = new CSVIterator($this->citiesFile, "\t");

@@ -1,9 +1,10 @@
 <?php
 namespace Novanova\Tests;
 
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Support\Facades\DB;
 use Novanova\IPGeoBase\CSVIterator;
 use Novanova\IPGeoBase\IpGeoBaseService;
+use Novanova\IPGeoBase\CityData;
 
 /**
  * @author Sergei Melnikov <me@rnr.name>
@@ -15,21 +16,19 @@ class IpGeoBaseServiceTest extends TestCase
      */
     public function runDatabaseMigrations()
     {
-        file_put_contents('/tmp/test.sqlite', '');
         $this->artisan('migrate', ['--path' => 'src/migrations']);
 
-//        $this->beforeApplicationDestroyed(function () {
-//            $this->artisan('migrate:rollback');
-//        });
+        $this->beforeApplicationDestroyed(function () {
+            $this->artisan('migrate:rollback');
+        });
     }
 
     public function testImport() {
         $cities = base_path('src/Novanova/IPGeoBase/cities.txt');
         $cidr = base_path('src/Novanova/IPGeoBase/cidr_optim.txt');
 
-        $service = new IpGeoBaseService($cities, $cidr);
-
-        $service->import();
+        $service = new IpGeoBaseService();
+        $service->import($cities, $cidr);
 
         $csv = new CSVIterator($cities, "\t");
 
@@ -40,5 +39,35 @@ class IpGeoBaseServiceTest extends TestCase
 
             $this->seeInDatabase('ip_geo_base__cities', $row);
         }
+    }
+
+    public function testGet() {
+        DB::table('ip_geo_base__cities')->insert([
+            'id' => 1959,
+            'city' => 'Нижневартовск',
+            'region' => 'Ханты-Мансийский автономный округ',
+            'district' => 'Уральский федеральный округ',
+            'lat' => 60.948009,
+            'lng' => 76.555847
+        ]);
+
+        DB::table('ip_geo_base__base')->insert([
+            'long_ip1' => 94265344,
+            'long_ip2' => 94273535,
+            'ip1' => '5.158.96.0',
+            'ip2' => '5.158.127.255',
+            'country' => 'RU',
+            'city_id' => 1959
+        ]);
+
+        $service = new IpGeoBaseService();
+
+        /**
+         * @var CityData $data
+         */
+        $data = $service->get('5.158.96.10');
+
+        $this->assertEquals('RU', $data->country);
+        $this->assertEquals('Нижневартовск', $data->city);
     }
 }
