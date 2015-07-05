@@ -17,8 +17,8 @@ class IpGeoBaseService
     public function get($ip) {
         $longIp = ip2long($ip);
 
-        $result = DB::table('ip_geo_base__base')->where($longIp, '>', DB::raw('ip_geo_base__base.long_ip1'))
-            ->where($longIp, '<', DB::raw('ip_geo_base__base.long_ip2'))
+        $result = DB::table('ip_geo_base__base')->where('ip_geo_base__base.long_ip1', '<', $longIp)
+            ->where(DB::raw('ip_geo_base__base.long_ip2'), '>', $longIp)
             ->leftJoin('ip_geo_base__cities', 'ip_geo_base__cities.id', '=', 'ip_geo_base__base.city_id')
             ->first();
 
