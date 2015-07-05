@@ -19,7 +19,6 @@ class IPGeoBaseSeeder extends Seeder
         $service = new IpGeoBaseService($citiesFile, $cidrFile);
 
         $service->import();
-
     }
 
 }

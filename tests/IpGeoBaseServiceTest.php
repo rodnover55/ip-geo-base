@@ -15,6 +15,7 @@ class IpGeoBaseServiceTest extends TestCase
      */
     public function runDatabaseMigrations()
     {
+        file_put_contents('/tmp/test.sqlite', '');
         $this->artisan('migrate', ['--path' => 'src/migrations']);
 
 //        $this->beforeApplicationDestroyed(function () {

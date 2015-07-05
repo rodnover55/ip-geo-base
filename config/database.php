@@ -10,7 +10,7 @@ return [
     'connections' => array(
         'sqlite' => array(
             'driver'   => 'sqlite',
-            'database' => ':memory:',
+            'database' => '/tmp/test.sqlite',
             'prefix'   => ''
         )
     )

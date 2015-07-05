@@ -19,10 +19,8 @@ class CreateIPGeoBaseTables extends Migration
                 $table->string('city', 128);
                 $table->string('region', 128);
                 $table->string('district', 128);
-                $table->string('country', 2)->nullable();
                 $table->float('lat');
                 $table->float('lng');
-                $table->index('country');
             }
         );
         Schema::create(
