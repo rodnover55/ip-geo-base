@@ -22,6 +22,8 @@ class IpGeoBaseService
             ->leftJoin('ip_geo_base__cities', 'ip_geo_base__cities.id', '=', 'ip_geo_base__base.city_id')
             ->first();
 
+        $result = (array)$result;
+
         return new CityData($result['country'], $result['city']);
     }
 
