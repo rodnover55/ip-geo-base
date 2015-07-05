@@ -1,6 +1,7 @@
 <?php
 
 namespace Novanova\IPGeoBase;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder;
 use ArrayIterator;
@@ -54,6 +55,13 @@ class DatabaseDiffer
 
             while ($destination->valid() && $this->data->valid()) {
                 $item = $destination->current();
+
+                if ($item instanceof Model) {
+                    $item = $item->toArray();
+                } else {
+                    $item = (array)$item;
+                }
+
                 $source = $this->data->current();
                 $compare = $this->compare($source, $item);
                 $type = null;

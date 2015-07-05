@@ -70,11 +70,11 @@ class IpGeoBaseService
             function ($operation, $items) {
                 switch ($operation) {
                     case DatabaseDiffer::INSERTED:
-                        DB::table('ip_geo_base__cities')->insert($items[0]);
+                        DB::table('ip_geo_base__cities')->insert($items);
                         break;
                     case DatabaseDiffer::UPDATED:
                         foreach ($items as $item) {
-                            DB::table('ip_geo_base__cities')->where('id', $items['id'])->update($item);
+                            DB::table('ip_geo_base__cities')->where('id', $item['id'])->update($item);
                         }
 
                         break;
@@ -108,11 +108,11 @@ class IpGeoBaseService
             function ($operation, $items) {
                 switch ($operation) {
                     case DatabaseDiffer::INSERTED:
-                        DB::table('ip_geo_base__base')->insert($items[0]);
+                        DB::table('ip_geo_base__base')->insert($items);
                         break;
                     case DatabaseDiffer::UPDATED:
                         foreach ($items as $item) {
-                            DB::table('ip_geo_base__base')->where('id', $items['id'])->update($item);
+                            DB::table('ip_geo_base__base')->where('id', $item['id'])->update($item);
                         }
 
                         break;
