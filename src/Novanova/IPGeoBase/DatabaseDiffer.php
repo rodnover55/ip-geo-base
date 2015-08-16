@@ -5,6 +5,7 @@ namespace Novanova\IPGeoBase;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder;
 use ArrayIterator;
+use Illuminate\Support\Collection;
 
 /**
  * @author Sergei Melnikov <me@rnr.name>
@@ -25,6 +26,25 @@ class DatabaseDiffer
     private $count;
     private $limit;
     private $diff;
+
+    private $rowsNumber;
+    private $currentRow;
+
+    /**
+     * @return mixed
+     */
+    public function getRowsNumber()
+    {
+        return $this->rowsNumber;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getCurrentRow()
+    {
+        return $this->currentRow;
+    }
 
     public function __construct($data, $fields, $primary = ['id'], array $options = []) {
         $this->data = $data;
@@ -49,20 +69,17 @@ class DatabaseDiffer
             self::DELETED => []
         ];
 
+        $this->rowsNumber = $query->count();
+        $this->currentRow = 1;
+
         $query->chunk($this->limit, function($items) use ($callback) {
             $destination = new ArrayIterator($items);
             $destination->rewind();
 
             while ($destination->valid() && $this->data->valid()) {
-                $item = $destination->current();
+                $item = $this->convertModel($destination->current());
 
-                if ($item instanceof Model) {
-                    $item = $item->toArray();
-                } else {
-                    $item = (array)$item;
-                }
-
-                $source = $this->data->current();
+                $source = $this->convertSource($this->data->current());
                 $compare = $this->compare($source, $item);
                 $type = null;
 
@@ -73,12 +90,15 @@ class DatabaseDiffer
 
                     $this->data->next();
                     $destination->next();
+                    $this->currentRow++;
                 } else if ($compare < 0){
                     $type = self::INSERTED;
                     $this->data->next();
                 } else if ($compare > 0) {
                     $type = self::DELETED;
+                    $source = $item;
                     $destination->next();
+                    $this->currentRow++;
                 }
 
                 if ($this->add($type, $source)) {
@@ -90,12 +110,15 @@ class DatabaseDiffer
             $type = static::DELETED;
 
             while ($destination->valid()) {
-                $source = $destination->current();
+                $source = $this->convertModel($destination->current());
 
                 if ($this->add($type, $source)) {
                     $callback($type, $this->diff[$type]);
                     $this->diff[$type] = [];
                 }
+
+                $destination->next();
+                $this->currentRow++;
             }
         });
 
@@ -117,9 +140,19 @@ class DatabaseDiffer
         }
     }
 
+    protected function convertModel($item) {
+        return ($item instanceof Model) ? ($item->toArray()) : ((array)$item);
+    }
+
+    protected function convertSource($item) {
+        return (new Collection($this->flipFields))->map(function ($field, $key) use ($item) {
+            return $item[$this->flipFields[$key]];
+        })->toArray();
+    }
+
     protected function compare($lhs, $rhs) {
         foreach ($this->primary as $key) {
-            $compare = strcmp("~{$lhs[$this->flipFields[$key]]}~", "~{$rhs[$key]}~");
+            $compare = strcmp("~{$lhs[$key]}~", "~{$rhs[$key]}~");
 
             if ($compare !== 0) {
                 return $compare;
@@ -130,12 +163,12 @@ class DatabaseDiffer
     }
 
     protected function equals($lhs, $rhs) {
-        foreach ($this->fields as $index => $key) {
-            if (is_numeric($lhs[$index]) && is_numeric($rhs[$key])) {
-                if ($lhs[$index] != $rhs[$key]) {
-                    return $lhs[$index] < $rhs[$key];
+        foreach ($this->fields as $key) {
+            if (is_numeric($lhs[$key]) && is_numeric($rhs[$key])) {
+                if ($lhs[$key] != $rhs[$key]) {
+                    return $lhs[$key] < $rhs[$key];
                 }
-            } else if (strcmp($lhs[$index], $rhs[$key]) !== 0) {
+            } else if (strcmp($lhs[$key], $rhs[$key]) !== 0) {
                 return false;
             }
         }
@@ -151,7 +184,7 @@ class DatabaseDiffer
         $model = [];
 
         foreach ($item as $key => $value) {
-            $model[$this->fields[$key]] = $value;
+            $model[$key] = $value;
         }
 
         $this->diff[$type][] = $model;
