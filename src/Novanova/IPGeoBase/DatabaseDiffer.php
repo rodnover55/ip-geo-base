@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder;
 use ArrayIterator;
 use Illuminate\Support\Collection;
+use Labora\DAL\Models\Product;
 
 /**
  * @author Sergei Melnikov <me@rnr.name>
@@ -72,58 +73,59 @@ class DatabaseDiffer
         $this->rowsNumber = $query->count();
         $this->currentRow = 1;
 
-        $query->chunk($this->limit, function($items) use ($callback) {
-            $destination = new ArrayIterator($items);
-            $destination->rewind();
+        $items = $query->get();
 
-            while ($destination->valid() && $this->data->valid()) {
-                $item = $this->convertModel($destination->current());
+        $destination = new ArrayIterator($items);
+        $destination->rewind();
 
-                $source = $this->convertSource($this->data->current());
-                $compare = $this->compare($source, $item);
-                $type = null;
+        while ($destination->valid() && $this->data->valid()) {
+            $item = $this->convertModel($destination->current());
 
-                if ($compare == 0) {
-                    if (!$this->equals($source, $item)) {
-                        $type = self::UPDATED;
-                    }
+            $source = $this->convertSource($this->data->current());
+            $compare = $this->compare($source, $item);
+            $type = null;
 
-                    $this->data->next();
-                    $destination->next();
-                    $this->currentRow++;
-                } else if ($compare < 0){
-                    $type = self::INSERTED;
-                    $this->data->next();
-                } else if ($compare > 0) {
-                    $type = self::DELETED;
-                    $source = $item;
-                    $destination->next();
-                    $this->currentRow++;
+            if ($compare == 0) {
+                if (!$this->equals($source, $item)) {
+                    $type = self::UPDATED;
                 }
 
-                if ($this->add($type, $source)) {
-                    $callback($type, $this->diff[$type]);
-                    $this->diff[$type] = [];
-                }
-            }
-
-            $type = static::DELETED;
-
-            while ($destination->valid()) {
-                $source = $this->convertModel($destination->current());
-
-                if ($this->add($type, $source)) {
-                    $callback($type, $this->diff[$type]);
-                    $this->diff[$type] = [];
-                }
-
+                $this->data->next();
+                $destination->next();
+                $this->currentRow++;
+            } else if ($compare < 0){
+                $type = self::INSERTED;
+                $item2 = Product::find($source['id']);
+                $this->data->next();
+            } else if ($compare > 0) {
+                $type = self::DELETED;
+                $source = $item;
                 $destination->next();
                 $this->currentRow++;
             }
-        });
+
+            if ($this->add($type, $source)) {
+                $callback($type, $this->diff[$type]);
+                $this->diff[$type] = [];
+            }
+        }
+
+        $type = static::DELETED;
+
+        while ($destination->valid()) {
+            $source = $this->convertModel($destination->current());
+
+            if ($this->add($type, $source)) {
+                $callback($type, $this->diff[$type]);
+                $this->diff[$type] = [];
+            }
+
+            $destination->next();
+            $this->currentRow++;
+            }
 
         while ($this->data->valid()) {
-            $source = $this->data->current();
+            $source = $this->convertSource($this->data->current());
             $this->data->next();
             $type = static::INSERTED;
 
