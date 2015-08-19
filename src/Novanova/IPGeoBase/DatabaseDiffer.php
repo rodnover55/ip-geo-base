@@ -95,7 +95,6 @@ class DatabaseDiffer
                 $this->currentRow++;
             } else if ($compare < 0){
                 $type = self::INSERTED;
-                $item2 = Product::find($source['id']);
                 $this->data->next();
             } else if ($compare > 0) {
                 $type = self::DELETED;
