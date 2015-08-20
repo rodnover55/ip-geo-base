@@ -26,7 +26,7 @@ class IPGeoBaseServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->publishes([
-            __DIR__.'/../../config/ipgeobase.php' => config_path('package.php')
+            __DIR__.'/../../config/ipgeobase.php' => config_path('ipgeobase.php')
         ], 'config');
 
         $this->publishes([
