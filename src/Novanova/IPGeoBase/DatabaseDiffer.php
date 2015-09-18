@@ -165,11 +165,10 @@ class DatabaseDiffer
 
     protected function equals($lhs, $rhs) {
         foreach ($this->fields as $key) {
-            if (is_numeric($lhs[$key]) && is_numeric($rhs[$key])) {
-                if ($lhs[$key] != $rhs[$key]) {
-                    return $lhs[$key] < $rhs[$key];
-                }
-            } else if (strcmp($lhs[$key], $rhs[$key]) !== 0) {
+            if (((is_numeric($lhs[$key]) && is_numeric($rhs[$key])) &&
+                    ($lhs[$key] != $rhs[$key])) ||
+                (strcmp($lhs[$key], $rhs[$key]) !== 0)
+            ) {
                 return false;
             }
         }
